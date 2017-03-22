@@ -75,6 +75,11 @@ namespace VisualStudio.SubwordNavigation {
                 return;
             }
 
+            if (point.Position == 1) {
+                operations.MoveToPreviousCharacter(extendSelection);
+                return;
+            }
+
             if (point == caret.ContainingTextViewLine.Start) {
                 operations.MoveLineUp(extendSelection);
                 operations.MoveToLastNonWhiteSpaceCharacter(extendSelection);
@@ -84,13 +89,10 @@ namespace VisualStudio.SubwordNavigation {
                 return;
             }
 
-            var extent = navigator.GetExtentOfSubword(point - 1);
+            var boundary = navigator.GetSubwordBoundary(point - 1, forward: false);
+            int end = boundary ?? point;
 
-            if (extent == null) {
-                return;
-            }
-
-            for (int i = point; i > extent.Value.Span.Start; i--) {
+            for (int i = point; i > end; i--) {
                 operations.MoveToPreviousCharacter(extendSelection);
             }
         }
@@ -103,22 +105,25 @@ namespace VisualStudio.SubwordNavigation {
             var caret = textView.Caret;
             var point = caret.Position.BufferPosition;
 
-            if (point.Position == textView.TextSnapshot.Length) {
+            // NOTE: Probably shouldn't be using TextSnapshot here...
+
+            if (point.Position == textView.TextSnapshot.Length)
+                return;
+
+            if (point.Position == textView.TextSnapshot.Length - 1) {
+                operations.MoveToNextCharacter(extendSelection);
                 return;
             }
 
             if (point == caret.ContainingTextViewLine.End) {
-                operations.MoveToStartOfNextLineAfterWhiteSpace(extendSelection);  
+                operations.MoveToStartOfNextLineAfterWhiteSpace(extendSelection);
                 return;
             }
 
-            var extent = navigator.GetExtentOfSubword(point);
+            var boundary = navigator.GetSubwordBoundary(point + 1, forward: true);
+            int end = boundary ?? point;
 
-            if (extent == null) {
-                return;
-            }
-
-            for (int i = point; i < extent.Value.Span.End && i < caret.ContainingTextViewLine.End; i++) {
+            for (int i = point; i < end && i < caret.ContainingTextViewLine.End; i++) {
                 operations.MoveToNextCharacter(extendSelection);
             }
         }
